@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  Upload,
 } from 'lucide-react';
 import {
   db,
@@ -24,6 +25,7 @@ import {
   type Project,
   type YearMonth,
 } from '../../core';
+import { CsvImportPanel } from './CsvImportPanel';
 import { FixedCostForm } from './FixedCostForm';
 import {
   BILLING_CYCLE_LABELS,
@@ -76,6 +78,8 @@ export default function FixedCostsPage() {
   );
 
   const [formOpen, setFormOpen] = useState<boolean>(false);
+  const [csvImportOpen, setCsvImportOpen] = useState<boolean>(false);
+  const [importBanner, setImportBanner] = useState<string | null>(null);
   const [editing, setEditing] = useState<FixedCost | null>(null);
   const [cancellingId, setCancellingId] = useState<ID | null>(null);
   const [cancelMonth, setCancelMonth] = useState<YearMonth>(month);
@@ -94,11 +98,20 @@ export default function FixedCostsPage() {
 
   const openCreateForm = () => {
     setEditing(null);
+    setCsvImportOpen(false);
     setFormOpen(true);
+  };
+
+  const openCsvImport = () => {
+    setFormOpen(false);
+    setEditing(null);
+    setImportBanner(null);
+    setCsvImportOpen(true);
   };
 
   const openEditForm = (fc: FixedCost) => {
     setEditing(fc);
+    setCsvImportOpen(false);
     setFormOpen(true);
     setCancellingId(null);
     setConfirmArchiveId(null);
@@ -163,15 +176,59 @@ export default function FixedCostsPage() {
             Monatsdeckung für {formatYearMonth(month)} · Fixkosten werden nach Priorität gedeckt.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCreateForm}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Neues Abo
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={openCsvImport}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 shadow-xs hover:bg-slate-50 transition-colors"
+          >
+            <Upload className="h-4 w-4" />
+            CSV importieren
+          </button>
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-emerald-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Neues Abo
+          </button>
+        </div>
       </div>
+
+      {importBanner && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span>{importBanner}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setImportBanner(null)}
+            className="text-xs font-medium text-emerald-700 hover:text-emerald-900"
+          >
+            Schließen
+          </button>
+        </div>
+      )}
+
+      {/* CSV-Import-Panel */}
+      {csvImportOpen && (
+        <CsvImportPanel
+          defaultMonth={month}
+          existingFixedCosts={fixedCosts}
+          onImported={(count) => {
+            setCsvImportOpen(false);
+            setImportBanner(
+              `${count} ${count === 1 ? 'Abo wurde' : 'Abos wurden'} erfolgreich aus der CSV-Datei importiert.`,
+            );
+          }}
+          onClose={() => setCsvImportOpen(false)}
+        />
+      )}
 
       {/* Formular zum Anlegen / Bearbeiten */}
       {formOpen && (
