@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { useLiveQuery } from 'dexie-react-hooks';
 import { z } from 'zod';
 import {
+  AlertTriangle,
   CheckCircle2,
   Download,
   HardDrive,
@@ -355,6 +356,20 @@ export function SettingsPage() {
       {/* App & Speicher */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
         <h2 className="text-base font-semibold text-slate-900">App & Offline-Speicher</h2>
+        {typeof window !== 'undefined' && window.location.hostname.endsWith('.github.io') && (
+          <div
+            role="note"
+            className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <p>
+              <strong>Gemeinsamer Speicherbereich ({window.location.hostname}):</strong> Alle
+              GitHub-Pages-Projekte unter dieser Domain teilen sich denselben Browser-Speicher
+              (IndexedDB). Für echte Finanzdaten empfiehlt sich eine eigene Subdomain (z. B. über
+              Netlify oder Cloudflare Pages) oder die lokale Nutzung.
+            </p>
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <div className="flex items-center gap-2 text-slate-700">
             <HardDrive className="h-4 w-4 text-slate-500" />

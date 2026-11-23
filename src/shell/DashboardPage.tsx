@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AlertTriangle, ArrowRight, Download, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Download, Sparkles, X } from 'lucide-react';
 import {
   DEFAULT_SETTINGS,
   currentYearMonth,
@@ -19,6 +19,7 @@ import {
   markExportedNow,
   shouldShowExportReminder,
 } from './backup';
+import { loadDemoData } from './demoData';
 
 export function DashboardPage() {
   const { month } = useMonth();
@@ -37,12 +38,23 @@ export function DashboardPage() {
   }, []);
 
   const [reminderDismissed, setReminderDismissed] = useState(false);
+  const [loadingDemo, setLoadingDemo] = useState(false);
 
   const enabledIds = settings?.enabledModules ?? DEFAULT_SETTINGS.enabledModules;
   const visibleModules = modules.filter((m) => enabledIds.includes(m.id));
   const showReminder =
     !reminderDismissed &&
     shouldShowExportReminder(currentYearMonth(), Boolean(hasAnyData));
+  const isEmpty = hasAnyData === false;
+
+  const handleLoadDemo = async () => {
+    setLoadingDemo(true);
+    try {
+      await loadDemoData(db, month);
+    } finally {
+      setLoadingDemo(false);
+    }
+  };
 
   const handleQuickExport = async () => {
     const payload = await exportAllData(db);
@@ -105,6 +117,88 @@ export function DashboardPage() {
         </div>
       )}
 
+      {/* Schnellstart im Leerzustand */}
+      {isEmpty && (
+        <section
+          aria-label="Schnellstart"
+          className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-xs space-y-4"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+                Willkommen · Schnellstart
+              </p>
+              <h2 className="mt-1 text-base font-bold text-slate-900">
+                So startest du mit deiner Cashflow-Engine
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-600">
+                Alle Eingaben bleiben 100 % lokal auf deinem Gerät – ganz ohne Konto oder Server.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={loadingDemo}
+              onClick={() => void handleLoadDemo()}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-60 transition-colors"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {loadingDemo ? 'Lädt …' : 'Beispieldaten laden'}
+            </button>
+          </div>
+
+          <ol className="grid gap-2 sm:grid-cols-2 text-xs">
+            <li>
+              <Link
+                to="/einnahmen"
+                className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200/80 bg-white px-3 py-2.5 font-medium text-slate-800 hover:border-emerald-400 transition-colors"
+              >
+                <span>
+                  <strong className="text-emerald-700">1.</strong> Einnahmequelle &amp; Buchung anlegen
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/abos"
+                className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200/80 bg-white px-3 py-2.5 font-medium text-slate-800 hover:border-emerald-400 transition-colors"
+              >
+                <span>
+                  <strong className="text-emerald-700">2.</strong> Abos &amp; Fixkosten eintragen
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/schulden"
+                className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200/80 bg-white px-3 py-2.5 font-medium text-slate-800 hover:border-emerald-400 transition-colors"
+              >
+                <span>
+                  <strong className="text-emerald-700">3.</strong> Schulden &amp; Tilgungsplan prüfen
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/ideen"
+                className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200/80 bg-white px-3 py-2.5 font-medium text-slate-800 hover:border-emerald-400 transition-colors"
+              >
+                <span>
+                  <strong className="text-emerald-700">4.</strong> Neue Einkommensideen bewerten
+                </span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              </Link>
+            </li>
+          </ol>
+
+          <p className="text-[11px] text-slate-500">
+            Tipp: „Beispieldaten laden“ trägt das Rechenbeispiel (620 € Einnahmen, 3 Abos, 3 Schulden) zum Ausprobieren ein – jederzeit unter Einstellungen wieder löschbar.
+          </p>
+        </section>
+      )}
+
       {/* Wasserfall-Überblick */}
       <section className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -127,7 +221,7 @@ export function DashboardPage() {
 
         {result && (
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl bg-white/8 p-3">
+            <div className="min-w-0 rounded-xl bg-white/8 p-3">
               <p className="text-xs text-slate-300">Fixkosten gedeckt</p>
               <p className="mt-1 text-base font-semibold tabular-nums">
                 {formatCents(result.fixedCostsCovered)}
@@ -136,7 +230,7 @@ export function DashboardPage() {
                 von {formatCents(result.fixedCostsDue)}
               </p>
             </div>
-            <div className="rounded-xl bg-white/8 p-3">
+            <div className="min-w-0 rounded-xl bg-white/8 p-3">
               <p className="text-xs text-slate-300">Überschuss</p>
               <p
                 className={`mt-1 text-base font-semibold tabular-nums ${
@@ -151,7 +245,7 @@ export function DashboardPage() {
                   : 'Nach Fixkosten'}
               </p>
             </div>
-            <div className="rounded-xl bg-white/8 p-3">
+            <div className="min-w-0 rounded-xl bg-white/8 p-3">
               <p className="text-xs text-slate-300">In Schulden</p>
               <p className="mt-1 text-base font-semibold tabular-nums text-sky-300">
                 {formatCents(result.totalToDebt)}
@@ -162,7 +256,7 @@ export function DashboardPage() {
                   : 'Mindest + Extra'}
               </p>
             </div>
-            <div className="rounded-xl bg-white/8 p-3">
+            <div className="min-w-0 rounded-xl bg-white/8 p-3">
               <p className="text-xs text-slate-300">Puffer / Frei</p>
               <p className="mt-1 text-base font-semibold tabular-nums">
                 {formatCents(result.bufferHeld + result.unallocated)}
@@ -182,11 +276,11 @@ export function DashboardPage() {
             Module
           </h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {visibleModules.map((mod) => {
             const Card = mod.DashboardCard;
             return (
-              <div key={mod.id} className="flex flex-col">
+              <div key={mod.id} className="flex min-w-0 flex-col">
                 {Card ? (
                   <Card month={month} />
                 ) : (
